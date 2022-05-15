@@ -1,9 +1,9 @@
-﻿using Models;
-using UnityEngine;
+﻿using UnityEngine;
 
+[CreateAssetMenu(menuName = "PrefabContainer/New PrefabContainer")]
 public class PrefabContainer : ScriptableObject
 {
-    [Header("Prefabs")] [SerializeField] private Player _playerPrefab;
+    [Header("Prefabs")] [SerializeField] private Player.Player _playerPrefab;
 
-    public Player PlayerPrefab => _playerPrefab;
+    public Player.Player PlayerPrefab => _playerPrefab;
 }
