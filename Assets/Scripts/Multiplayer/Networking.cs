@@ -12,8 +12,8 @@ namespace Multiplayer
         [SerializeField] private ushort _maxClientCount;
         [SerializeField] private int _targetFrameRate = 60;
 
-        public Server Server { get; } = new Server();
-        public static ushort CurrentTick { get; set; } = 0;
+        public static Server Server { get; } = new Server();
+        public static ushort CurrentTick { get; private set; }
 
         private void Start()
         {
@@ -35,6 +35,10 @@ namespace Multiplayer
 
         private void OnApplicationQuit()
         {
+            foreach (var component in PlayerSpawner.Players.Values)
+            {
+                Server.DisconnectClient(component.Client.Id);
+            }
             Server.Stop();
         }
 
@@ -42,7 +46,7 @@ namespace Multiplayer
         {
             if (PlayerSpawner.Players.TryGetValue(e.Id, out var player))
             {
-                Destroy(player.gameObject);
+                Destroy(player.Client.gameObject);
             }
         }
         

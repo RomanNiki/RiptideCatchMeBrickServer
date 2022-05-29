@@ -53,6 +53,34 @@ namespace Multiplayer
         {
             return new Vector3(message.GetFloat(), message.GetFloat(), message.GetFloat());
         }
+        
+        public static Message AddVectors3(this Message message, Vector3[] value) => Add(message, value);
+
+        /// <summary>Adds a <see cref="Vector3"/> to the message.</summary>
+        /// <param name="value">The <see cref="Vector3"/> to add.</param>
+        /// <returns>The message that the <see cref="Vector3"/> was added to.</returns>
+        public static Message Add(this Message message, Vector3[] massive)
+        {
+            message.AddInt(massive.Length);
+            foreach (var value in massive)
+            {
+                AddVector3(message, value);
+            }
+            return message;
+        }
+
+        public static Vector3[] GetVectors3(this Message message)
+        {
+            var length = message.GetInt();
+            var massive = new Vector3[length];
+            
+            for (var i = 0; i < length; i++)
+            {
+                massive[i] = message.GetVector3();
+            }
+
+            return massive;
+        }
 
         #endregion
 

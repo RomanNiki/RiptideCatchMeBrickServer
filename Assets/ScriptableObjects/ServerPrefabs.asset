@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: ServerPrefabs
   m_EditorClassIdentifier: 
   _playerPrefab: {fileID: 8416860996858152871, guid: 47be84ac0671805459b9a2c87ed8b40f, type: 3}
+  _projectiles:
+  - {fileID: 922550318652284210, guid: 5245d5a959932de448e51efa288c2ab3, type: 3}

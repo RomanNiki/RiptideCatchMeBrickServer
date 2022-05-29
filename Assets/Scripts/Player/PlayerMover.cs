@@ -9,10 +9,10 @@ namespace Player
     [RequireComponent(typeof(Player))]
     public class PlayerMover : MonoBehaviour
     {
-        [SerializeField] private Transform _camProxy;
         [SerializeField] private float _gravity;
         [SerializeField] private float _movementSpeed;
         [SerializeField] private float _jumpHeight;
+        [SerializeField] private float _rotateSpeed = 5f;
         private Player _player;
         private CharacterController _controller;
 
@@ -23,7 +23,15 @@ namespace Player
         private Vector2 _moveInput;
         private bool[] _inputs;
         private float _yVelocity;
+        private Vector2 _throwJoystickInput;
+        private bool _didTeleport;
 
+        public void Enabled(bool value)
+        {
+            enabled = value;
+            _controller.enabled = value;
+        }
+        
         private void Start()
         {
             _player = GetComponent<Player>();
@@ -34,7 +42,7 @@ namespace Player
 
         private void FixedUpdate()
         {
-            Move(_moveInput, _inputs[0], _inputs[1]);
+            Move(_moveInput, _inputs[0], _inputs[1], _throwJoystickInput);
         }
 
         private void Initialize()
@@ -43,12 +51,20 @@ namespace Player
             _moveSpeed = _movementSpeed * Time.fixedDeltaTime;
             _jumpSpeed = Mathf.Sqrt(_jumpHeight * -2f * _gravityAcceleration);
         }
-
-        private void Move(Vector2 inputDirection, bool jump, bool sprint)
+        
+        public void Teleport(Vector3 toPosition)
         {
-            var moveDirection =
-                Vector3.Normalize(_camProxy.right * inputDirection.x +
-                                  Vector3.Normalize(FlattenVector3(_camProxy.forward)) * inputDirection.y);
+            var isEnabled = _controller.enabled;
+            _controller.enabled = false;
+            transform.position = toPosition;
+            _controller.enabled = isEnabled;
+
+            _didTeleport = true;
+        }
+
+        private void Move(Vector2 inputDirection, bool jump, bool sprint, Vector2 throwJoystickInput)
+        {
+            var moveDirection = new Vector3(inputDirection.x, 0f, inputDirection.y);
 
             moveDirection *= _moveSpeed;
 
@@ -69,21 +85,29 @@ namespace Player
             _yVelocity += _gravityAcceleration;
             moveDirection.y = _yVelocity;
             _controller.Move(moveDirection);
-
+            if (_throwJoystickInput.magnitude > 0.2f)
+            {
+                RotateCharacter(new Vector3(throwJoystickInput.x, 0f, throwJoystickInput.y));
+            }
+            else
+            {
+                RotateCharacter(new Vector3(inputDirection.x, 0f, inputDirection.y));
+            }
             SendMovement();
         }
 
-        private Vector3 FlattenVector3(Vector3 vector)
+        private void RotateCharacter(Vector3 moveDirection)
         {
-            vector.y = 0f;
-            return vector;
+            if (Vector3.Angle(transform.forward, moveDirection) <= 0) return;
+            var newDirection = Vector3.RotateTowards(transform.forward, moveDirection, _rotateSpeed, 0);
+            transform.rotation = Quaternion.LookRotation(newDirection);
         }
 
-        public void SetInput(Vector2 moveInput,bool[] inputs, Vector3 forward)
+        public void SetInput(Vector2 moveInput,bool[] inputs, Vector2 rotation)
         {
+            _throwJoystickInput = rotation;
             _moveInput = moveInput;
             _inputs = inputs;
-            _camProxy.forward = forward;
         }
     
         private void SendMovement()
@@ -96,8 +120,9 @@ namespace Player
             message.AddUShort(_player.Id);
             message.AddUShort(Networking.CurrentTick);
             message.AddVector3(transform.position);
-            message.AddVector3(_camProxy.forward);
-            _player.Networking.Server.SendToAll(message);
+            message.AddQuaternion(transform.rotation);
+            message.AddBool(_didTeleport);
+            Networking.Server.SendToAll(message);
         }
     }
 }
